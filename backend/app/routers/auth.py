@@ -16,6 +16,7 @@ from app.core.deps import get_current_user
 from app.models.models import User
 from app.schemas.schemas import (
     LoginRequest,
+    RegisterRequest,
     LoginResponse,
     RefreshResponse,
     UserResponse,
@@ -88,6 +89,38 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
                 full_name=user.full_name,
                 role=user.role,
             ),
+        )
+    }
+
+
+@router.post("/api/auth/register", status_code=201)
+def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.username == body.username).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "ALREADY_EXISTS",
+                "message": "Username sudah digunakan",
+            },
+        )
+
+    user = User(
+        username=body.username,
+        password_hash=get_password_hash(body.password),
+        full_name=body.full_name,
+        role="viewer",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "data": UserResponse(
+            id=user.id,
+            username=user.username,
+            full_name=user.full_name,
+            role=user.role,
         )
     }
 

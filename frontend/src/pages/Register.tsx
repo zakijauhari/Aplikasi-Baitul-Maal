@@ -1,37 +1,36 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Building2 } from 'lucide-react';
+import { UserPlus, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import { useAuth } from '../context/AuthContext';
 
-export default function Login() {
+export default function Register() {
   const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
 
+    if (password !== confirmPassword) {
+      toast.error('Konfirmasi password tidak cocok');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await api.post('/api/auth/login', { username, password });
-      const { access_token, user } = res.data.data;
-      login(access_token, user);
-      toast.success('Login berhasil');
-      navigate('/dashboard');
-    } catch (err: any) {
-      const status = err.response?.status;
-      if (status === 429) {
-        setError('Terlalu banyak percobaan, coba lagi dalam beberapa menit.');
-      } else {
-        setError('Username atau password salah.');
-      }
+      await api.post('/api/auth/register', {
+        username,
+        password,
+        full_name: fullName,
+      });
+      toast.success('Pendaftaran berhasil, silakan login');
+      navigate('/login');
+    } catch {
+      // handled by interceptor
     } finally {
       setLoading(false);
     }
@@ -54,11 +53,11 @@ export default function Login() {
             <Building2 size={32} className="text-white" />
           </div>
           <h1 className="font-poppins font-bold text-2xl text-primary">Baitul Maal</h1>
-          <p className="text-muted text-sm mt-1">Sistem Manajemen Keuangan Masjid yang Transparan & Amanah</p>
+          <p className="text-muted text-sm mt-1">Daftar Akun Jamaah</p>
         </div>
 
         <div className="card">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -78,39 +77,58 @@ export default function Login() {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-sm text-muted">Password</label>
-                <a href="#" className="text-xs text-accent hover:underline">
-                  Lupa Password?
-                </a>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Nama Lengkap"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="input-field pl-10"
+                  maxLength={100}
+                  required
+                />
               </div>
+            </div>
+
+            <div>
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type="password"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-10 pr-10"
+                  className="input-field pl-10"
                   minLength={6}
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
             </div>
 
-            {error && (
-              <p className="text-danger text-sm text-center">{error}</p>
-            )}
+            <div>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <input
+                  type="password"
+                  placeholder="Konfirmasi Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="input-field pl-10"
+                  minLength={6}
+                  required
+                />
+              </div>
+            </div>
 
             <button
               type="submit"
@@ -121,21 +139,18 @@ export default function Login() {
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
               ) : (
                 <>
-                  <LogIn size={18} />
-                  Masuk
+                  <UserPlus size={18} />
+                  Daftar
                 </>
               )}
             </button>
           </form>
 
           <p className="text-center text-sm text-muted mt-4">
-            Belum punya akun?{' '}
-            <Link to="/register" className="text-accent hover:underline font-medium">
-              Daftar di sini
+            Sudah punya akun?{' '}
+            <Link to="/login" className="text-accent hover:underline font-medium">
+              Masuk di sini
             </Link>
-          </p>
-          <p className="text-center text-xs text-muted mt-3">
-            Butuh bantuan akses? Hubungi admin utama masjid.
           </p>
         </div>
 

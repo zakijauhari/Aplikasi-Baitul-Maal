@@ -24,6 +24,12 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=6)
 
 
+class RegisterRequest(BaseModel):
+    username: str = Field(..., max_length=50)
+    password: str = Field(..., min_length=6)
+    full_name: str = Field(..., max_length=100)
+
+
 class UserResponse(BaseModel):
     id: UUID
     username: str
