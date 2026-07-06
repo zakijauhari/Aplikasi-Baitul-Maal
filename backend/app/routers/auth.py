@@ -73,7 +73,7 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
         value=refresh_token,
         httponly=True,
         secure=True,
-        samesite="strict",
+        samesite="none",
         max_age=7 * 24 * 60 * 60,
     )
 
