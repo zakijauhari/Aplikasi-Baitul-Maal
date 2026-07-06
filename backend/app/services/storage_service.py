@@ -1,9 +1,12 @@
+import logging
 import uuid
 from typing import Optional
 
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 BUKTI_BUCKET = "bukti-transaksi"
@@ -29,6 +32,9 @@ async def upload_file(file_data: bytes, filename: str, content_type: str) -> Opt
         public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/{BUKTI_BUCKET}/{object_name}"
         return public_url
 
+    logger.error(
+        "Supabase upload gagal (status=%s): %s", response.status_code, response.text
+    )
     return None
 
 
