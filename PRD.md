@@ -35,8 +35,8 @@
 | ORM | SQLAlchemy 2.x + Alembic (migration) | |
 | Database | PostgreSQL 15+ | |
 | Auth | JWT (access token + refresh token), password hashing dengan `bcrypt` atau `argon2` | |
-| File storage | Upload bukti transaksi disimpan di object storage (Supabase Storage bucket `bukti-transaksi`) — **jangan simpan di disk lokal backend**, karena platform hosting gratis (Render) mereset filesystem setiap kali service redeploy/restart, sehingga file lokal akan hilang | |
-| Deployment | Lihat §2.1 di bawah — **Railway TIDAK dipakai** (per Juli 2026 Railway tidak lagi punya tier gratis sungguhan, wajib kartu kredit dan minimal $1–5/bulan) | |
+| File storage | Upload bukti transaksi disimpan di object storage (Supabase Storage bucket `bukti-transaksi`) — **jangan simpan di disk lokal backend**, karena platform hosting gratis (Railway) mereset filesystem setiap kali service redeploy/restart, sehingga file lokal akan hilang | |
+| Deployment | Lihat §2.1 di bawah | |
 | PDF generation | `reportlab` atau `weasyprint` di backend (bukan generate PDF di frontend) | |
 
 ### 2.1 Rencana Deployment Gratis (final)
@@ -46,10 +46,10 @@
 | Frontend (static build Vite) | **Cloudflare Pages** (atau Vercel/Netlify) | Gratis tanpa batas waktu, tanpa kartu kredit, sudah familiar dari project portfolio sebelumnya. |
 | Database PostgreSQL | **Supabase Free Tier** | 500MB database, tanpa kartu kredit. Batasan: project otomatis **pause setelah 7 hari tanpa request** — untuk app ini kemungkinan besar aman karena Mode TV melakukan polling tiap 30 detik selama TV menyala, yang otomatis menjaga project tetap aktif. |
 | File storage bukti transaksi | **Supabase Storage** (bucket `bukti-transaksi`) | 1GB gratis. **Perlu kompresi gambar di sisi frontend sebelum upload** (resize + compress ke JPG kualitas menengah), karena bukti sekarang wajib untuk SEMUA transaksi (§5.3) sehingga jumlah file akan lebih cepat menumpuk. |
-| Backend FastAPI | **Render Free Web Service** | Gratis tanpa kartu kredit. **Trade-off:** service otomatis "tidur" (spin down) setelah ±15 menit tanpa traffic, dan butuh 30–60 detik untuk bangun kembali di request pertama setelah idle. Untuk Dashboard/Riwayat/Laporan ini hanya berdampak ke loading pertama yang lebih lambat di jam sepi. Untuk Mode TV, karena polling rutin tiap 30 detik, service akan cenderung tetap "warm" selama TV menyala; risiko cold-start hanya muncul kalau TV benar-benar dimatikan lebih dari 15 menit lalu dinyalakan lagi. |
+| Backend FastAPI | **Railway** (dengan Nixpacks) | Gratis $5 credit/bulan — cukup untuk 1 service kecil. **Trade-off:** service otomatis "tidur" (spin down) setelah ±30 menit tanpa traffic, dan butuh 5–10 detik untuk bangun kembali di request pertama setelah idle. Untuk Dashboard/Riwayat/Laporan ini hanya berdampak ke loading pertama yang lebih lambat di jam sepi. Untuk Mode TV, karena polling rutin tiap 30 detik, service akan cenderung tetap "warm" selama TV menyala; risiko cold-start hanya muncul kalau TV benar-benar dimatikan lebih dari 30 menit lalu dinyalakan lagi. |
 | Alternatif (jika ingin tanpa cold-start sama sekali) | **VPS + Cloudflare Tunnel** (self-host, bukan gratis kecuali VPS sudah ada) | Cocok kalau developer sudah terbiasa dengan setup VPS + Nginx + Cloudflare Tunnel dari project-project sebelumnya. Backend jalan terus tanpa spin-down, tapi ini membutuhkan biaya VPS bulanan (bukan opsi $0). |
 
-**Catatan untuk agent:** jangan generate kode/konfigurasi apapun yang mengarah ke Railway (`railway.json`, `Procfile` khusus Railway, dsb). Gunakan `render.yaml` untuk konfigurasi Render, dan pastikan environment variable koneksi Supabase (connection string DB + storage keys) dibaca dari environment variables backend, bukan di-hardcode.
+**Catatan untuk agent:** Gunakan `railway.json` (bukan `render.yaml`) untuk konfigurasi Railway, dan pastikan environment variable koneksi Supabase (connection string DB + storage keys) dibaca dari environment variables backend, bukan di-hardcode.
 
 ---
 
@@ -599,7 +599,7 @@ Ini wajib jelas supaya agent tidak bingung "siapa user pertama yang login".
 ### Frontend (`frontend/.env`, diisi lewat Cloudflare Pages Environment Variables)
 | Variable | Contoh nilai | Keterangan |
 |---|---|---|
-| `VITE_API_BASE_URL` | `https://baitul-maal-backend.onrender.com` | URL backend Render, diisi setelah backend pertama kali deploy |
+| `VITE_API_BASE_URL` | `https://baitul-maal-backend.up.railway.app` | URL backend Railway, diisi setelah backend pertama kali deploy |
 
 **Catatan untuk agent:** jangan pernah commit file `.env` asli ke repo — hanya commit `.env.example` berisi nama variable tanpa nilai asli. `SUPABASE_SERVICE_ROLE_KEY` dan `JWT_SECRET`/`TV_TOKEN_SECRET` adalah rahasia, jangan pernah diekspos ke response API atau log.
 
@@ -609,7 +609,7 @@ Ini wajib jelas supaya agent tidak bingung "siapa user pertama yang login".
 
 - Backend memakai logging standar Python (`logging` module), format terstruktur (minimal timestamp, level, message). Di `ENVIRONMENT=development`, level `DEBUG`; di `ENVIRONMENT=production`, level `INFO` ke atas saja (jangan log data sensitif seperti password atau JWT penuh).
 - Semua exception yang tidak tertangani di endpoint wajib di-log dengan stack trace di server (bukan dikirim ke response — response ke client tetap format error standar §7.9 dengan kode `INTERNAL_ERROR`, tanpa membocorkan detail stack trace ke client).
-- **v1 tidak memakai layanan monitoring eksternal berbayar** (misal Sentry berbayar) — cukup log ke stdout, karena Render menyediakan log viewer bawaan gratis yang bisa dibuka lewat dashboard Render untuk debugging.
+- **v1 tidak memakai layanan monitoring eksternal berbayar** (misal Sentry berbayar) — cukup log ke stdout, karena Railway menyediakan log viewer bawaan gratis yang bisa dibuka lewat dashboard Railway untuk debugging.
 - Endpoint health check: `GET /api/health` (public, tanpa auth) mengembalikan `{ "data": { "status": "ok" } }` — berguna untuk dipakai cron/uptime-monitor eksternal (misal UptimeRobot gratis) untuk ping berkala, sekaligus membantu mencegah Render free tier spin-down di jam-jam sepi (lihat §2.1).
 
 ---
@@ -628,7 +628,7 @@ baitul-maal/
 │   │   └── types/
 │   ├── .env.example            # VITE_API_BASE_URL, dll
 │   └── tailwind.config.js
-├── backend/                   # FastAPI (deploy ke Render)
+├── backend/                   # FastAPI (deploy ke Railway)
 │   ├── app/
 │   │   ├── routers/            # auth, transaksi, kategori, laporan, pengumuman, tv, profil
 │   │   ├── models/              # SQLAlchemy models
@@ -638,12 +638,12 @@ baitul-maal/
 │   │   └── main.py
 │   ├── alembic/                    # migrations
 │   ├── .env.example                  # DATABASE_URL (Supabase), SUPABASE_STORAGE_KEY, JWT_SECRET, dll — jangan commit .env asli
-│   ├── render.yaml                     # konfigurasi deploy Render (bukan railway.json/Procfile)
+│   ├── railway.json                     # konfigurasi deploy Railway (auto-build dengan Nixpacks)
 │   └── requirements.txt
 └── PRD.md
 ```
 
-**Catatan `render.yaml`:** definisikan service type `web`, environment `python`, `buildCommand: pip install -r requirements.txt`, `startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Semua kredensial (koneksi Supabase, JWT secret) diisi lewat Render Environment Variables dashboard, bukan ditulis di `render.yaml`.
+**Catatan Railway:** Railway menggunakan Nixpacks untuk auto-detect Python/FastAPI dari `requirements.txt`. Start command didefinisikan di `Procfile` (`web: uvicorn app.main:app --host 0.0.0.0 --port $PORT`). Semua kredensial (koneksi Supabase, JWT secret) diisi lewat Railway Environment Variables dashboard, bukan ditulis di `railway.json`.
 
 ---
 
@@ -661,7 +661,7 @@ baitul-maal/
 10. Backend + Frontend: Mode TV (token khusus, auto-refresh 30 detik, fullscreen layout tanpa sidebar).
 11. Pengaturan (kategori, pengumuman, profil masjid dengan field kosong/placeholder generik — bukan nama masjid tertentu, harus diisi manual oleh Admin — dan kelola user dengan dukungan multi-Admin).
 12. Testing role-based access (pastikan Viewer benar-benar tidak bisa POST/PUT/DELETE transaksi meski memaksa lewat API langsung).
-13. Deployment: buat project Supabase (DB + Storage bucket `bukti-transaksi`), isi semua environment variables (§12), deploy backend ke Render (`render.yaml`), deploy frontend ke Cloudflare Pages. Uji Mode TV berjalan stabil selama beberapa jam untuk memastikan polling 30 detik menjaga backend & Supabase tetap aktif (lihat §2.1). Verifikasi checklist acceptance criteria (§16) sebelum menyatakan selesai.
+13. Deployment: buat project Supabase (DB + Storage bucket `bukti-transaksi`), isi semua environment variables (§12), deploy backend ke Railway (`railway.json` + `Procfile`), deploy frontend ke Cloudflare Pages. Uji Mode TV berjalan stabil selama beberapa jam untuk memastikan polling 30 detik menjaga backend & Supabase tetap aktif (lihat §2.1). Verifikasi checklist acceptance criteria (§16) sebelum menyatakan selesai.
 
 ---
 
