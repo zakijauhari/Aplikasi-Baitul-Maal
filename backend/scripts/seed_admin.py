@@ -11,9 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 if not DATABASE_URL:
@@ -40,7 +38,9 @@ try:
     else:
         admin = User(
             username=INITIAL_ADMIN_USERNAME,
-            password_hash=pwd_context.hash(INITIAL_ADMIN_PASSWORD),
+            password_hash=bcrypt.hashpw(INITIAL_ADMIN_PASSWORD.encode("utf-8"),
+            bcrypt.gensalt()
+            ).decode("utf-8"),
             full_name="Admin Utama",
             role="admin",
             is_active=True,
