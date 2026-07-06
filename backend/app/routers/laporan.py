@@ -92,7 +92,6 @@ def generate_laporan(
 def download_laporan(
     arsip_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     arsip = db.query(LaporanArsip).filter(LaporanArsip.id == arsip_id).first()
     if not arsip:
