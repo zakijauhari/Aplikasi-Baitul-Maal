@@ -16,20 +16,7 @@ tv_security = HTTPBearer(auto_error=False)
 @router.get("/api/tv/data")
 def get_tv_data(
     db: Session = Depends(get_db),
-    credentials: HTTPAuthorizationCredentials = Depends(tv_security),
 ):
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "UNAUTHORIZED", "message": "Token TV diperlukan"},
-        )
-
-    payload = decode_tv_token(credentials.credentials)
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "UNAUTHORIZED", "message": "Token TV tidak valid"},
-        )
 
     total_saldo = db.query(func.coalesce(func.sum(Kategori.saldo), 0)).filter(
         Kategori.is_active == True
