@@ -7,6 +7,7 @@ import api from '../lib/api';
 export default function LupaPassword() {
   const [step, setStep] = useState<'username' | 'reset'>('username');
   const [username, setUsername] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,6 +24,7 @@ export default function LupaPassword() {
     try {
       const res = await api.post('/api/auth/forgot-password', { username });
       const code = res.data.data.reset_code;
+      setGeneratedCode(code);
       toast.success('Kode reset berhasil dibuat');
       setStep('reset');
     } catch (err: any) {
@@ -133,13 +135,21 @@ export default function LupaPassword() {
             </form>
           ) : (
             <form onSubmit={handleResetPassword} className="space-y-5">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
                 <p className="text-sm text-blue-700 font-medium">
                   Kode reset untuk <span className="font-bold">{username}</span>
                 </p>
-                <p className="text-xs text-blue-500 mt-1">Gunakan kode di bawah untuk mengatur ulang password</p>
-              </div>
 
+                <p className="text-4xl font-bold tracking-[0.4em] text-blue-900 mt-3">
+                  {generatedCode}
+                </p>
+
+                <p className="text-xs text-blue-500 mt-3">
+                  Tulis kode di atas, lalu masukkan ke kolom <b>Kode Reset</b> di bawah.
+                  <br />
+                  Kode berlaku selama <b>15 menit</b>.
+                </p>
+              </div>
               <div>
                 <label className="text-sm text-muted block mb-1">Kode Reset</label>
                 <div className="relative">
