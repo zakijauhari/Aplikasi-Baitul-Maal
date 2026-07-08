@@ -145,7 +145,7 @@ export default function LupaPassword() {
                 </p>
 
                 <p className="text-xs text-blue-500 mt-3">
-                  Tulis kode di atas, pada kolom <b>Kode Reset</b> di bawah.
+                  Tulis kode di atas pada kolom <b>Kode Reset</b> di bawah.
                   <br />
                   Kode berlaku selama <b>15 menit</b>.
                 </p>
