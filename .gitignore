@@ -62,3 +62,5 @@ backend/pdf_arsip/
 backend/data/
 *.sqlite3
 *.db
+
+PRD.md
