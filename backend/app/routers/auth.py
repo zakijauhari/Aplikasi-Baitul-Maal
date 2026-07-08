@@ -11,12 +11,15 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    generate_reset_code,
 )
 from app.core.deps import get_current_user
 from app.models.models import User
 from app.schemas.schemas import (
     LoginRequest,
     RegisterRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     LoginResponse,
     RefreshResponse,
     UserResponse,
@@ -151,6 +154,61 @@ def refresh_token(request: Request, db: Session = Depends(get_db)):
 
     new_access_token = create_access_token({"sub": str(user.id)})
     return {"data": RefreshResponse(access_token=new_access_token)}
+
+
+@router.post("/api/auth/forgot-password")
+def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == body.username, User.is_active == True).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "Username tidak ditemukan"},
+        )
+
+    code = generate_reset_code()
+    user.reset_code = code
+    user.reset_code_expiry = datetime.now(timezone.utc) + timedelta(minutes=15)
+    db.commit()
+
+    return {"data": {"message": "Kode reset telah dibuat", "reset_code": code}}
+
+
+@router.post("/api/auth/reset-password")
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == body.username, User.is_active == True).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "Username tidak ditemukan"},
+        )
+
+    if not user.reset_code or not user.reset_code_expiry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "NO_RESET_CODE", "message": "Tidak ada kode reset yang diminta"},
+        )
+
+    if datetime.now(timezone.utc) > user.reset_code_expiry:
+        user.reset_code = None
+        user.reset_code_expiry = None
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "CODE_EXPIRED", "message": "Kode reset sudah kedaluwarsa"},
+        )
+
+    if user.reset_code != body.reset_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_CODE", "message": "Kode reset salah"},
+        )
+
+    user.password_hash = get_password_hash(body.new_password)
+    user.reset_code = None
+    user.reset_code_expiry = None
+    db.commit()
+
+    return {"data": {"message": "Password berhasil diubah"}}
 
 
 @router.post("/api/auth/logout")

@@ -19,6 +19,8 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     role = Column(String(10), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    reset_code = Column(String(6), nullable=True)
+    reset_code_expiry = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 

@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import LupaPassword from './pages/LupaPassword';
 import Dashboard from './pages/Dashboard';
 import InputTransaksi from './pages/InputTransaksi';
 import Riwayat from './pages/Riwayat';
@@ -30,6 +31,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/lupa-password" element={<LupaPassword />} />
             <Route path="/tv" element={<ModeTV />} />
 
             <Route

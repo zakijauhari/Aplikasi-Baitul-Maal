@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -5,6 +6,10 @@ from jose import JWTError, jwt
 import bcrypt
 
 from app.core.config import settings
+
+
+def generate_reset_code() -> str:
+    return str(random.randint(100000, 999999))
 
 def get_password_hash(password: str) -> str:
     return bcrypt.hashpw(

@@ -193,6 +193,16 @@ class ProfilMasjidUpdate(BaseModel):
     status_audit_terverifikasi: Optional[bool] = None
 
 
+class ForgotPasswordRequest(BaseModel):
+    username: str = Field(..., max_length=50)
+
+
+class ResetPasswordRequest(BaseModel):
+    username: str = Field(..., max_length=50)
+    reset_code: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=6)
+
+
 class UserCreate(BaseModel):
     username: str = Field(..., max_length=50)
     password: str = Field(..., min_length=6)
